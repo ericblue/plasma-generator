@@ -1,0 +1,21 @@
+# Historical research material: retained locally, intentionally not published.
+/files/
+/programs/
+/run/
+/dosbox/
+/run-plasma.sh
+/docs/plasma-exe-research.md
+/docs/images/
+
+# Generated web artifacts.
+/web/node_modules/
+/web/dist/
+/web/test-results/
+/web/playwright-report/
+
+# Local environment and operating-system state.
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example

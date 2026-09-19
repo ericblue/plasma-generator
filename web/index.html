@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0d10">
+<meta name="description" content="Classic plasma restorations and modern generative visuals in Plasma Lab.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./plasma-icon.svg" type="image/svg+xml">
+<title>Plasma Generator</title>
+<style>
+  :root {
+    --bg: #0b0d10; --panel: #14181d; --line: #232a32;
+    --fg: #e6edf3; --dim: #8b98a5; --accent: #5ac8fa;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); overflow-x: hidden; }
+  header { padding: 12px 18px; border-bottom: 1px solid var(--line); display: flex;
+           align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  h1 { font-size: 15px; margin: 0; letter-spacing: .18em; text-transform: uppercase; }
+  .sub { color: var(--dim); font-size: 12px; min-width: 0; }
+  .tabs { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
+  .tab { background: transparent; border: 1px solid var(--line); color: var(--dim);
+         font: inherit; font-size: 12px; padding: 6px 12px; cursor: pointer; }
+  .tab:hover { color: var(--fg); }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #06202c; }
+  .type-select { display: none; }
+  main { display: grid; grid-template-columns: 260px 1fr; gap: 0; min-height: calc(100vh - 52px); }
+  aside { border-right: 1px solid var(--line); padding: 16px; background: var(--panel); }
+  .grp { margin-bottom: 20px; }
+  .grp h2 { font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+            color: var(--dim); margin: 0 0 10px; font-weight: 600; }
+  label { display: block; font-size: 11px; color: var(--dim); margin: 10px 0 4px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=text], select {
+    width: 100%; background: var(--bg); color: var(--fg); border: 1px solid var(--line);
+    padding: 6px 8px; font: inherit; font-size: 12px;
+  }
+  .row { display: flex; gap: 6px; }
+  button.act { flex: 1; background: var(--bg); color: var(--fg); border: 1px solid var(--line);
+               font: inherit; font-size: 12px; padding: 7px; cursor: pointer; }
+  button.act:hover { border-color: var(--accent); color: var(--accent); }
+  .val { float: right; color: var(--fg); }
+  .stage { display: flex; flex-direction: column; align-items: center;
+           justify-content: center; padding: 18px; gap: 10px; min-width: 0;
+           position: sticky; top: 0; height: calc(100vh - 52px); }
+  .frame { aspect-ratio: 4 / 3; height: auto; width: min(100%, var(--frame-max-width, 880px));
+           border: 1px solid var(--line); background: #000; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .readout { font-size: 11px; color: var(--dim); }
+  .note { font-size: 11px; color: var(--dim); line-height: 1.5; border-left: 2px solid var(--accent);
+          padding-left: 10px; }
+  .palette-preview { display: block; width: 100%; height: 24px; margin-top: 8px;
+                     border: 1px solid var(--line); }
+  .color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 7px; }
+  .color-grid input { width: 100%; height: 28px; padding: 1px; border: 1px solid var(--line);
+                      background: var(--bg); cursor: pointer; }
+  .mini { font-size: 10px; color: var(--dim); line-height: 1.4; margin: 7px 0 0; }
+  .chk { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--dim);
+         margin-top: 10px; }
+  .chk input { accent-color: var(--accent); }
+  #fatal { padding: 20px; color: #ff6b6b; font-size: 13px; }
+  .diagnostics { position: fixed; right: 12px; bottom: 10px; z-index: 10; margin: 0;
+                 padding: 5px 7px; color: #b9ffdc; background: #001b; font-size: 10px; }
+  .recording { border-color: #ff5364 !important; color: #ff7a87 !important; }
+  .stage.presentation { position: fixed; inset: 0; z-index: 20; width: 100vw; height: 100vh;
+                        padding: 0; gap: 0; background: #000; cursor: none; }
+  .stage.presentation .frame { width: min(100vw, calc(100vh * var(--display-aspect, 1.333333)));
+                               height: auto; max-width: none; max-height: 100vh; border: 0; }
+  .stage.presentation .readout { display: none; }
+  .stage:fullscreen { width: 100vw; height: 100vh; padding: 0; gap: 0; background: #000; }
+  .stage:fullscreen .frame { width: min(100vw, calc(100vh * var(--display-aspect, 1.333333)));
+                             height: auto; max-width: none; max-height: 100vh; border: 0; }
+  .stage:fullscreen .readout { position: fixed; left: 12px; bottom: 8px; margin: 0;
+                               padding: 5px 7px; color: #c8d1da; background: #000a; }
+  @media (max-width: 760px) {
+    header { display: block; }
+    header h1 { margin-bottom: 10px; }
+    main { grid-template-columns: minmax(0, 1fr); width: 100%; }
+    aside { border-right: 0; border-bottom: 1px solid var(--line); min-width: 0; overflow: hidden; }
+    .sub, .tabs { display: none; }
+    .type-select { display: block; width: 100%; }
+    .row > *, .grp { min-width: 0; }
+    .note { overflow-wrap: anywhere; }
+    .stage { width: 100%; position: static; height: auto; }
+    .frame { width: 100%; height: auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    button, input, select { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Plasma Generator</h1>
+  <span class="sub">classic plasma restored · modern visuals explored</span>
+  <nav class="tabs">
+    <button class="tab" data-type="demoscene">Plasma Lab</button>
+    <button class="tab" data-type="mulvey">Mulvey 1988</button>
+    <button class="tab" data-type="tom">Tom's 1994</button>
+  </nav>
+  <select class="type-select" id="plasma-type" aria-label="Plasma type">
+    <option value="demoscene">Plasma Lab</option>
+    <option value="mulvey">Mulvey 1988</option>
+    <option value="tom">Tom's Plasma 1994</option>
+  </select>
+</header>
+
+<p id="fatal" hidden></p>
+
+<main>
+  <aside>
+    <div class="grp" id="grp-mulvey">
+      <h2>Diamond-square</h2>
+      <label>Source</label>
+      <select id="mulvey-source">
+        <option value="generated">Generate in browser</option>
+        <option value="original">Original 1988 image</option>
+      </select>
+
+      <div id="mulvey-generate">
+        <label>Roughness F <span class="val" id="roughness-val"></span></label>
+        <input type="range" id="roughness" min="0.5" max="6" step="0.1" value="2">
+        <label>Seed</label>
+        <input type="text" id="seed" spellcheck="false">
+        <div class="chk">
+          <input type="checkbox" id="centre">
+          <label for="centre" style="margin:0">Displace centre (textbook)</label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="act" id="regenerate">New image (N)</button>
+        </div>
+      </div>
+
+      <div id="note-original">
+        <p class="note">The actual 64,000-byte <code>PLASMA.IMG</code> shipped in the
+        1988 archive — output from a real VGA run on 5 August 1988.</p>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="act reset-defaults">Reset defaults</button>
+      </div>
+    </div>
+
+    <div class="grp" id="grp-tom">
+      <h2>Fractal swimming</h2>
+      <label>Smoothness</label>
+      <select id="tom-roughness">
+        <option value="255">1 — Rough (original default)</option>
+        <option value="127">2 — Medium</option>
+        <option value="63">3 — Smooth</option>
+      </select>
+      <label>Random-table start</label>
+      <input type="text" id="tom-seed" spellcheck="false">
+      <div class="chk">
+        <input type="checkbox" id="tom-swim">
+        <label for="tom-swim" id="tom-swim-label" style="margin:0">Show 160 × 100 swim window</label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="act" id="tom-regenerate">New plasma (N)</button>
+        <button class="act reset-defaults">Reset defaults</button>
+      </div>
+      <p class="note">Two moving regions of one fractal are added together using
+      the original 10,000-frame movement table from <code>TOMSPLAS.DAT</code>.</p>
+    </div>
+
+    <div class="grp" id="grp-sines">
+      <h2>Plasma Lab</h2>
+      <label>Scene</label>
+      <select id="demo-scene">
+        <option value="iceFlow">Ice Flow</option>
+        <option value="fractalSwim">Fractal Swim</option>
+        <option value="custom">Custom</option>
+        <option value="starryVortex">Starry Vortex</option>
+        <option value="starryMandala">Starry Mandala</option>
+        <option value="celestialTrails">Celestial Trails</option>
+        <option value="sunflowerHeat">Sunflower Heat</option>
+        <option value="irisesInMotion">Irises in Motion</option>
+        <option value="cafeTerraceGlow">Café Terrace Glow</option>
+        <option value="mandelbrotVoyage">Mandelbrot Voyage</option>
+        <option value="memorySpiral">Memory Spiral</option>
+        <option value="memoryTunnel">Memory Tunnel</option>
+      </select>
+      <label>Pattern</label>
+      <select id="demo-pattern">
+        <option value="fractalSwim">Fractal Swim</option>
+        <option value="classic">Classic Sines</option>
+        <option value="liquid">Liquid Warp</option>
+        <option value="vortex">Vortex</option>
+        <option value="kaleidoscope">Kaleidoscope</option>
+        <option value="mandala">Mandala</option>
+        <option value="mandelbrot">Classic Mandelbrot</option>
+        <option value="memoryMandelbrot">Memory Mandelbrot (zₙ₋₁ ghost)</option>
+        <option value="memoryTunnel">Memory Tunnel (continuous zoom)</option>
+      </select>
+      <label>Finish</label>
+      <select id="demo-finish">
+        <option value="clean">Clean</option>
+        <option value="bloom">Neon Bloom</option>
+        <option value="trails">Dreamy Trails</option>
+      </select>
+      <label><span id="frequency-label">Frequency</span> <span class="val" id="sineScale-val"></span></label>
+      <input type="range" id="sineScale" min="2" max="40" step="1" value="12">
+      <label>Motion <span class="val" id="demo-motion-val"></span></label>
+      <input type="range" id="demo-motion" min="0" max="3" step="0.1" value="1">
+      <label>Intensity <span class="val" id="demo-intensity-val"></span></label>
+      <input type="range" id="demo-intensity" min="0.2" max="2" step="0.1" value="1">
+      <div class="row" style="margin-top:12px">
+        <button class="act" id="surprise">Surprise me</button>
+        <!-- Microphone reaction is gated by AUDIO_REACTION_ENABLED in src/main.ts
+             until its response curve is tuned; hidden here so it stays hidden
+             even before the module runs. -->
+        <button class="act" id="audio" hidden>Use microphone</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button class="act reset-defaults">Reset defaults</button>
+      </div>
+      <p class="mini" id="audio-status" hidden>Audio reaction is off. Microphone input never leaves this device.</p>
+      <p class="note">Scenes populate the editable controls below. Ice Flow is the
+      clean, cool-toned Plasma Lab default. Fractal Swim is a continuous-field GPU
+      homage to Tom's rough plasma. Memory Mandelbrot uses zₙ₊₁ = zₙ² + zₙ₋₁ + c.</p>
+    </div>
+
+    <div class="grp">
+      <h2>Rendering</h2>
+      <label>Render profile</label>
+      <select id="render-profile">
+        <option value="authentic">Authentic VGA — 320 × 200</option>
+        <option value="hd">Modern HD — 1920 × 1080</option>
+        <option value="uhd">Modern UHD — 3840 × 2160</option>
+      </select>
+      <label>Sampling</label>
+      <select id="sampling">
+        <option value="pixel">Pixel-perfect</option>
+        <option value="smooth">Smooth</option>
+        <option value="glow">Smooth + subtle glow</option>
+      </select>
+      <label>Live preview quality</label>
+      <select id="preview-quality">
+        <option value="full">Full resolution</option>
+        <option value="balanced">Balanced (half size)</option>
+        <option value="performance">Performance (quarter size)</option>
+      </select>
+      <div class="chk">
+        <input type="checkbox" id="show-diagnostics">
+        <label for="show-diagnostics" style="margin:0">Show FPS diagnostics</label>
+      </div>
+      <p class="note">Modern profiles generate Mulvey and Tom at native widescreen
+      resolution. The archived Mulvey image is cleanly upscaled because its source is fixed.</p>
+    </div>
+
+    <div class="grp">
+      <h2>Palette</h2>
+      <select id="palette"></select>
+      <canvas class="palette-preview" id="palette-preview" width="384" height="24" aria-label="Palette preview"></canvas>
+      <div id="custom-palette" hidden>
+        <div class="color-grid" id="custom-colors"></div>
+        <p class="mini">Edit six stops; the wheel blends between them continuously.</p>
+      </div>
+      <label><span id="speed-label">Cycle speed</span> <span class="val" id="speed-val"></span></label>
+      <input type="range" id="speed" min="0" max="120" step="1" value="24">
+      <div class="row" style="margin-top:12px">
+        <button class="act" id="pause">Pause</button>
+        <button class="act" id="export">PNG</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button class="act" id="fullscreen">Full screen (F)</button>
+        <button class="act" id="presentation">Presentation (H)</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h2>Share &amp; export</h2>
+      <label>Perfect loop (Plasma Lab)</label>
+      <select id="loop-seconds">
+        <option value="0">Off</option>
+        <option value="5">5 seconds</option>
+        <option value="10">10 seconds</option>
+        <option value="20">20 seconds</option>
+      </select>
+      <label>WebM recording length</label>
+      <select id="record-seconds">
+        <option value="5">5 seconds</option>
+        <option value="10">10 seconds</option>
+        <option value="20">20 seconds</option>
+      </select>
+      <div class="row" style="margin-top:10px">
+        <button class="act" id="record">Record WebM</button>
+        <button class="act" id="share">Copy share link</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button class="act" id="preset-export">Save preset</button>
+        <button class="act" id="preset-import">Load preset</button>
+      </div>
+      <input id="preset-file" type="file" accept="application/json,.json" hidden>
+      <p class="mini" id="action-status" aria-live="polite"></p>
+    </div>
+
+    <p class="mini">Historical ports credit Bret Mulvey (PLASMA, 1988) and Tom
+    Dibble (Tom's Plasma, 1994). Tom credited Jeremy Longley and Thomas Hagen in
+    the lineage of the swimming effect. Modernization experiment by Eric Blue,
+    developed with Claude and Codex.</p>
+
+  </aside>
+
+  <section class="stage" id="stage">
+    <div class="frame" id="frame"><canvas id="view"></canvas></div>
+    <p class="readout" id="readout"></p>
+  </section>
+</main>
+
+<p class="diagnostics" id="diagnostics" hidden></p>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
