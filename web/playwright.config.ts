@@ -3,9 +3,17 @@ import { defineConfig } from '@playwright/test'
 export default defineConfig({
   testDir: './tests',
   outputDir: './test-results',
-  snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
+  // Baselines are per-platform: WebGL output and CSS layout rounding both differ
+  // between macOS and Linux (the canvas lands on 554px tall here, 553px on Linux),
+  // and a one-row shift is enough to blow past maxDiffPixelRatio on the detailed
+  // fractal scenes. Without {platform}, macOS baselines get diffed against CI's
+  // Linux renders and can never match.
+  snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{platform}{ext}',
   fullyParallel: true,
-  workers: 2,
+  // SwiftShader rasterizes WebGL entirely on the CPU, and GitHub's runners have
+  // two cores. Two workers each driving a continuously animating canvas starves
+  // the box and surfaces as bogus timeouts and browser crashes, not real failures.
+  workers: process.env['CI'] ? 1 : 2,
   forbidOnly: Boolean(process.env['CI']),
   retries: process.env['CI'] ? 2 : 0,
   reporter: process.env['CI'] ? 'github' : 'list',

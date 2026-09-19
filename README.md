@@ -2,6 +2,8 @@
 
 A browser-native generator that restores two memorable DOS plasma effects—Bret Mulvey's **PLASMA** (1988) and Tom Dibble's **Tom's Plasma 1.1** (1994)—alongside a new, GPU-native collection of generative visuals called **Plasma Lab**.
 
+**▶ Live demo: <https://plasma.lab.eric-blue.com/>** — no install, runs entirely in the browser.
+
 ![Plasma Generator showing the Ice Flow scene in Plasma Lab](assets/plasma-generator-ice-flow.png)
 
 The historical modes aim to preserve what made the originals distinctive. The modern mode builds outward with liquid, vortex, kaleidoscope, and mandala fields; artist-inspired and editable palettes; bloom and trail finishes; HD/UHD rendering; seamless loops; and recording.
@@ -30,6 +32,9 @@ I wanted to share the result so other people could enjoy the original programs a
 | ![Mulvey PLASMA rendering](assets/mulvey-1988-render.png) | ![Tom's Plasma rendering](assets/toms-plasma-1994-render.png) |
 
 ## Run locally
+
+The [live demo](https://plasma.lab.eric-blue.com/) needs nothing installed. To run
+your own copy:
 
 Requirements: Node.js 20 or later and Yarn 1.x.
 
