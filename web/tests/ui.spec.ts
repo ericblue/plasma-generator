@@ -49,7 +49,11 @@ test('creative controls stay shareable and portable', async ({ page }) => {
 })
 
 test('Plasma Lab launches first and modes keep appropriate render defaults', async ({ page }) => {
-  test.setTimeout(60_000)
+  // This test switches to the UHD profile (3840x2160). CI has no GPU, so that
+  // frame is rasterized on the CPU by SwiftShader and blocks the main thread for
+  // far longer than a desktop GPU would take -- long enough that the next click
+  // cannot go through inside the local budget.
+  test.setTimeout(process.env['CI'] ? 180_000 : 60_000)
   await page.goto('/')
 
   const tabs = page.locator('.tab')
