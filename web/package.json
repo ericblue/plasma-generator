@@ -5,6 +5,9 @@
   "license": "MIT",
   "description": "Classic plasma restorations and modern generative visuals in TypeScript + WebGL2",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
