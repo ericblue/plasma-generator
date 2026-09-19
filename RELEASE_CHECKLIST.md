@@ -27,6 +27,10 @@
 - [x] Run `yarn install --frozen-lockfile`, `yarn build`, and `yarn test` in
   `web/` on a clean machine. (Build + 11/11 Playwright tests green 2026-09-18;
   clean-machine run still pending — CI covers this on first push.)
+- [ ] Run the **full** suite locally with a GPU (`cd web && yarn test`, no `CI`
+  env set). Two tests are skipped on CI because they rasterize UHD and
+  full-quality trails, which is infeasible on a GPU-less runner -- a local run is
+  the only thing that covers them. All 11 must pass.
 - [ ] Test Chromium, Firefox, Safari/WebKit, mobile layout, keyboard controls,
   fullscreen, presentation mode, PNG, WebM, JSON presets, and offline reload.
 - [x] Confirm `AUDIO_REACTION_ENABLED` is still `false` and no build prompts for
