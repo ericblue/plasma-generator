@@ -358,6 +358,11 @@ let tomFrame = 0
 let tomFrameFraction = 0
 let last = performance.now()
 let animationTime = 0
+// A paused scene is static, so redrawing it every frame just burns CPU/GPU --
+// which on a battery is drain, and under software rasterization (CI, machines
+// with blocklisted drivers) saturates the box badly enough to starve input.
+// Draw when running, or when something changed while paused.
+let needsRedraw = true
 let forceFullResolution = false
 let recording = false
 let audioContext: AudioContext | null = null
@@ -593,10 +598,20 @@ function drawCurrentScene(): void {
   })
 }
 
+/** Any interaction or layout change can alter the scene; redraw on the next frame. */
+export function markSceneDirty(): void { needsRedraw = true }
+
+for (const evt of ['input', 'change', 'click', 'keydown', 'pointerdown'] as const) {
+  document.addEventListener(evt, markSceneDirty, { capture: true, passive: true })
+}
+window.addEventListener('resize', markSceneDirty)
+document.addEventListener('visibilitychange', markSceneDirty)
+
 function frame(now: number): void {
   const dt = Math.min(0.1, (now - last) / 1000)
   last = now
   if (!state.paused) {
+    needsRedraw = true
     animationTime += dt
     if (!(state.type === 'demoscene' && state.loopSeconds > 0)) paletteOffset += state.speed * dt
     if (state.type === 'tom' && (tomEngine || tomModernEngine)) {
@@ -611,7 +626,11 @@ function frame(now: number): void {
     }
   }
   sampleAudio()
-  drawCurrentScene()
+  // Live audio keeps the field moving even while paused.
+  if (needsRedraw || audioAnalyser) {
+    drawCurrentScene()
+    needsRedraw = false
+  }
   fpsFrames++
   if (now - fpsSince >= 500) {
     fpsValue = (fpsFrames * 1000) / (now - fpsSince)
